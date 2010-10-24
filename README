@@ -1,0 +1,25 @@
+  Plugin for CakePHP
+
+  Authors
+  -------
+  See the AUTHORS file.
+
+  Copyright & License
+  -------------------
+  Braintree Plugin for CakePHP is Copyright (c) 2010 Anthony Putignano
+  if not otherwise stated. The code is distributed under the terms
+  of the MIT License. For the full license text see the LICENSE file.
+
+  Download
+  --------
+  Tar: http://github.com/anthonyp/CakePHP-Braintree-Plugin/tarball/master
+  Zip: http://github.com/anthonyp/CakePHP-Braintree-Plugin/zipball/master
+
+  Installation
+  ------------
+  1. Extract the downloaded archive.
+  2. Move or copy the extracted directory anthonyp-braintree-[hash] to /path/to/your/app/plugins/braintree
+  3. Add your Braintree merchant API settings to the braintree_merchants table
+
+  For more information please visit the braintree wiki at
+  http://github.com/anthonyp/CakePHP-Braintree-Plugin/wikis
