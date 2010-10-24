@@ -18,7 +18,7 @@
   Installation
   ------------
   1. Extract the downloaded archive.
-  2. Move or copy the extracted directory anthonyp-braintree-[hash] to /path/to/your/app/plugins/braintree
+  2. Move or copy the extracted directory anthonyp-CakePHP-Braintree-Plugin/wikis-[hash] to /path/to/your/app/plugins/braintree
   3. Add your Braintree merchant API settings to the braintree_merchants table
 
   For more information please visit the braintree wiki at
