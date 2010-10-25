@@ -5,6 +5,7 @@
  * This element requires the BraintreeTransparentRedirect helper to be loaded
  *
  * Possible options:
+ * 	- 'braintree_merchant_id' String		required	The Braintree Merchant ID
  *  - 'braintree_customer_id' String		required	The Customer ID the vaulted credit card should be associated with
  *  - 'billing_address' Array				required	Only requried if 'billing_postal_code_auth' is disabled.
  *  													An array with the following billing address keys:
@@ -112,7 +113,7 @@
 		}
 		if ($braintree_badge !== false) {
 		?>
-			<a href="https://www.braintreegateway.com/merchants/<?=DsConfig::getConfig('BRAINTREE_MERCHANT_ID'); ?>/verified" target="_blank"><img src="https://braintree-badges.s3.amazonaws.com/<?=$braintree_badge; ?>.png" border="0" align="right" /></a>
+			<a href="https://www.braintreegateway.com/merchants/<?=$braintree_merchant_id; ?>/verified" target="_blank"><img src="https://braintree-badges.s3.amazonaws.com/<?=$braintree_badge; ?>.png" border="0" align="right" /></a>
 		<? } ?>
 	
 		<?=$this->Form->input(
