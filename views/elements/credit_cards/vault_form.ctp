@@ -21,7 +21,8 @@
  *	- 'billing_postal_code_auth' Boolean	optional	If set to true, a postal code field will be displayed, and will be used in lieu of passed billing address information
  *  - 'form_options' Array					optional	Options to pass to Form::create()
  *  - 'callback_url' Mixed					optional	Array- or String- based URL to redirect Braintree callback to. Defaults to current action.
- *  - 'foreign_id' String					optional	The foreign ID the vaulted credit card should be associated with
+ *  - 'foreign_model' String				optional	The foreign model or comma-separated list of foreign models the vaulted credit card should be associated with
+ *  - 'foreign_id' String					optional	The foreign ID or comma-separated list of foreign IDs the vaulted credit card should be associated with
  *  - 'before_copy' String					optional	Copy to display before the credit card form
  *  - 'after_copy' String					optional	Copy to display after the credit card form
  *  - 'submit_label' String					optional	Label to use for submit button. Default to 'Submit'
@@ -65,6 +66,9 @@
 		$callback_url = array(
 			'action' => $this->params['action']
 		);
+	}
+	if (!empty($foreign_model)) {
+		$callback_url['foreign_model'] = $foreign_model;
 	}
 	if (!empty($foreign_id)) {
 		$callback_url['foreign_id'] = $foreign_id;

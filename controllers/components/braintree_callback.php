@@ -61,17 +61,66 @@ class BraintreeCallbackComponent extends Object {
  *	'payment' => array(
  *		'redirect' => array(
  *			'action' => 'review'
- *		),
- *		'model' => 'Order'
+ *		)
  *	)
  * )
  * ... In this example, 'payment' is the action being watched for callbacks. Upon successful processing, the user is redirected 
- * to the 'review' action. 'Order' is the foreign model that is associated with the callback. In order to log a foreign ID, 
- * a named parameter 'foreign_id' can be passed with the Braintree request
+ * to the 'review' action. In order to log one or more foreign model(s) and foreign ID(s), named parameters 'foreign_model' and 
+ * 'foreign_id' can be passed with the Braintree request containing either 1 model and 1 ID, or a comma-separated list of models 
+ * and IDs for the purpose of creating multiple relationships.
  *
  * @var array
  */
 	public $_callback_actions = array();
+	
+/**
+ * Parse out foreign model(s) and foreign id(s) from return request into an array like: array('ModelName' => '[the_foreign_id]')
+ * 
+ * @return	array
+ */
+	public function parseForeignRelationshipsFromRequest () {
+		
+		if (
+			!empty($this->controller->params['named']['foreign_model']) && 
+			!empty($this->controller->params['named']['foreign_id'])
+		) {
+			$foreign_models = explode(',', $this->controller->params['named']['foreign_model']);
+			$foreign_ids = explode(',', $this->controller->params['named']['foreign_id']);
+		}
+		
+		if (empty($foreign_models) || empty($foreign_ids)) {
+			return array();
+		}
+		
+		if (count($foreign_models) < count($foreign_ids)) {
+			$model_count = count($foreign_models);
+			foreach ($foreign_ids as $key => $foreign_id) {
+				if ($key >= $model_count) {
+					unset($foreign_ids[$key]);
+				}
+			}
+		}
+		
+		if (count($foreign_ids) < count($foreign_models)) {
+			$foreign_id_count = count($foreign_ids);
+			foreach ($foreign_models as $key => $model) {
+				if ($key >= $foreign_id_count) {
+					unset($foreign_models[$key]);
+				}
+			}
+		}
+		
+		$return_array = array();
+		foreach ($foreign_models as $key => $model) {
+			$return_array[] = array(
+				'foreign_model' => $foreign_models[$key],
+				'foreign_id' => $foreign_ids[$key]
+			);
+		}
+		
+		return $return_array;
+		
+	}
 
 /**
  * Initialize
@@ -270,11 +319,17 @@ class BraintreeCallbackComponent extends Object {
 		$this->braintree_error = !empty($result) ? $result->message : __('No response. Please try again.', true);
 		
 		$error = 'BRAINTREE ERROR: ';
-		if (
-			!empty($this->action_settings['model']) && 
-			!empty($this->controller->params['named']['foreign_id'])
-		) {
-			$error .= $this->action_settings['model'] . '.' . $this->controller->params['named']['foreign_id'] . ': ';
+		$foreign_relationships = $this->parseForeignRelationshipsFromRequest();
+		if (!empty($foreign_relationships)) {
+			$count = 0;
+			foreach ($foreign_relationships as $relationship) {
+				if ($count > 0) {
+					$error .= ', ';
+				}
+				$error .= $relationship['foreign_model'] . '.' . $relationship['foreign_id'];
+				$count++;
+			}
+			$error .= ': ';
 		}
 		if (!empty($result)) {
 			$error .= $result->message;
@@ -297,27 +352,52 @@ class BraintreeCallbackComponent extends Object {
  */
 	public function onSuccess ($result) {
 		
-		$this->BraintreeCreditCard->begin();
+		$full_address_blank = true;
+		foreach (array(
+			'firstName',
+			'lastName',
+			'company',
+			'streetAddress',
+			'extendedAddress',
+			'locality',
+			'countryCodeAlpha2',
+			'countryCodeAlpha3',
+			'countryCodeNumeric',
+			'countryName'
+		) as $key) {
+			if (!empty($result->creditCard->billingAddress->{$key})) {
+				$full_address_blank = false;
+				break;
+			}
+		}
+		$braintree_address = array();
 		
+		$this->BraintreeCreditCard->begin();
 		$default_remote_sync = $this->BraintreeAddress->remote_sync;
 		$this->BraintreeAddress->remote_sync = false;
 		$address_saved = $this->BraintreeAddress->save(array(
-			'BraintreeAddress' => array(
-				'id' => $result->creditCard->billingAddress->customerId . '|' . $result->creditCard->billingAddress->id,
-				'braintree_customer_id' => $result->creditCard->billingAddress->customerId,
-				'unique_address_identifier' => $this->BraintreeAddress->generateUniqueAddressIdentifier($result),
-				'first_name' => $result->creditCard->billingAddress->firstName,
-				'last_name' => $result->creditCard->billingAddress->lastName,
-				'company' => $result->creditCard->billingAddress->company,
-				'street_address' => $result->creditCard->billingAddress->streetAddress,
-				'extended_address' => $result->creditCard->billingAddress->extendedAddress,
-				'locality' => $result->creditCard->billingAddress->locality,
-				'region' => $result->creditCard->billingAddress->region,
-				'postal_code' => $result->creditCard->billingAddress->postalCode,
-				'country_code_alpha_2' => $result->creditCard->billingAddress->countryCodeAlpha2,
-				'country_code_alpha_3' => $result->creditCard->billingAddress->countryCodeAlpha3,
-				'country_code_numeric' => $result->creditCard->billingAddress->countryCodeNumeric,
-				'country_name' => $result->creditCard->billingAddress->countryName
+			'BraintreeAddress' => array_merge(
+				array(
+					'id' => $result->creditCard->billingAddress->customerId . '|' . $result->creditCard->billingAddress->id,
+					'braintree_customer_id' => $result->creditCard->billingAddress->customerId,
+					'unique_address_identifier' => $this->BraintreeAddress->generateUniqueAddressIdentifier($result)
+				),
+				!$full_address_blank ? array(
+					'first_name' => $result->creditCard->billingAddress->firstName,
+					'last_name' => $result->creditCard->billingAddress->lastName,
+					'company' => $result->creditCard->billingAddress->company,
+					'street_address' => $result->creditCard->billingAddress->streetAddress,
+					'extended_address' => $result->creditCard->billingAddress->extendedAddress,
+					'locality' => $result->creditCard->billingAddress->locality,
+					'region' => $result->creditCard->billingAddress->region,
+					'postal_code' => $result->creditCard->billingAddress->postalCode,
+					'country_code_alpha_2' => $result->creditCard->billingAddress->countryCodeAlpha2,
+					'country_code_alpha_3' => $result->creditCard->billingAddress->countryCodeAlpha3,
+					'country_code_numeric' => $result->creditCard->billingAddress->countryCodeNumeric,
+					'country_name' => $result->creditCard->billingAddress->countryName
+				) : array(
+					'postal_code' => $result->creditCard->billingAddress->postalCode
+				)
 			)
 		));
 		$this->BraintreeAddress->remote_sync = $default_remote_sync;
@@ -353,23 +433,27 @@ class BraintreeCallbackComponent extends Object {
 			return false;
 		}
 		
-		if (
-			!empty($this->action_settings['model']) && 
-			!empty($this->controller->params['named']['foreign_id'])
-		) {
+		$foreign_relationships = $this->parseForeignRelationshipsFromRequest();
 		
-			$credit_card_relation_saved = $this->BraintreeCreditCardRelation->save(array(
-				'BraintreeCreditCardRelation' => array(
-					'braintree_credit_card_id' => $result->creditCard->token,
-					'model' => $this->action_settings['model'],
-					'foreign_id' => $this->controller->params['named']['foreign_id']
-				)
-			));
-			
-			if (!$credit_card_relation_saved) {
-				$this->BraintreeCreditCard->rollback();
-				$this->braintree_error = $system_error;
-				return false;
+		if (!empty($foreign_relationships)) {
+				
+			foreach ($foreign_relationships as $relationship) {
+				
+				$this->BraintreeCreditCardRelation->create(false);
+				$credit_card_relation_saved = $this->BraintreeCreditCardRelation->save(array(
+					'BraintreeCreditCardRelation' => array(
+						'braintree_credit_card_id' => $result->creditCard->token,
+						'model' => $relationship['foreign_model'],
+						'foreign_id' => $relationship['foreign_id']
+					)
+				));
+				
+				if (!$credit_card_relation_saved) {
+					$this->BraintreeCreditCard->rollback();
+					$this->braintree_error = $system_error;
+					return false;
+				}
+				
 			}
 		
 		}
