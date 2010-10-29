@@ -221,6 +221,7 @@ class BraintreeAddress extends BraintreeLocalAppModel {
 		
 		return md5(
 			Configure::read('Braintree.merchantId') . ':' . 
+			$result->creditCard->customerId . ':' . 
 			$this->standardizeString($result->creditCard->billingAddress->firstName) . ':' . 
 			$this->standardizeString($result->creditCard->billingAddress->lastName) . ':' . 
 			$this->standardizeString($result->creditCard->billingAddress->company) . ':' . 

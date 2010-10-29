@@ -259,6 +259,7 @@ class BraintreeCreditCard extends BraintreeLocalAppModel {
 		
 		return md5(
 			Configure::read('Braintree.merchantId') . ':' . 
+			$result->creditCard->customerId . ':' . 
 			$this->standardizeString($result->creditCard->cardholderName) . ':' . 
 			$this->standardizeString($result->creditCard->cardType) . ':' . 
 			$result->creditCard->maskedNumber . ':' . 
