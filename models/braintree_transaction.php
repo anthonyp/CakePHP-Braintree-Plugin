@@ -174,6 +174,11 @@ class BraintreeTransaction extends BraintreeLocalAppModel {
 			);
 		}
 		
+		if (!empty($this->id) && !empty($this->data[$this->alias]['braintree_customer_id'])) {
+			$this->id = $this->data[$this->alias]['braintree_customer_id'] . '|' . $this->id;
+			$this->data[$this->alias][$this->primaryKey] = $this->id;
+		}
+		
 		return true;
 		
 	}

@@ -82,11 +82,11 @@ CREATE TABLE IF NOT EXISTS `braintree_merchants` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `braintree_transactions` (
-  `id` varchar(36) NOT NULL,
+  `id` varchar(73) NOT NULL,
   `braintree_merchant_id` varchar(36) NOT NULL,
   `braintree_customer_id` char(36) NOT NULL,
   `braintree_credit_card_id` char(36) NOT NULL,
-  `braintree_transaction_id` varchar(36) DEFAULT NULL,
+  `braintree_transaction_id` varchar(73) DEFAULT NULL,
   `model` varchar(32) DEFAULT NULL,
   `foreign_id` varchar(36) DEFAULT NULL,
   `type` varchar(16) NOT NULL DEFAULT 'sale',

@@ -194,7 +194,9 @@ class BraintreeSource extends DataSource {
 							$this->showError(__('The transaction attempting to be refunded is a credit, not a sale.', true));
 							return false;
 						}
-						$result = Braintree_Transaction::refund($to_save['braintreeTransactionId'], $to_save['amount']);
+						$exploded = explode('|', $to_save['braintreeTransactionId']);
+						$braintree_transaction_id = isset($exploded[1]) ? $exploded[1] : $to_save['braintreeTransactionId'];
+						$result = Braintree_Transaction::refund($braintree_transaction_id, $to_save['amount']);
 					} else { // it's a sale
 						unset(
 							$to_save['type'],
@@ -273,6 +275,8 @@ class BraintreeSource extends DataSource {
 					if (empty($transaction)) {
 						return false;
 					}
+					$exploded = explode('|', $model->id);
+					$braintree_transaction_id = isset($exploded[1]) ? $exploded[1] : $model->id;
 					if (!empty($to_save['status']) && $to_save['status'] == 'voided') {
 						if (
 							$transaction[0][$model->alias]['status'] != 'authorized' &&
@@ -281,7 +285,7 @@ class BraintreeSource extends DataSource {
 							$this->showError(__('A transaction can only be VOIDED when the status is AUTHORIZED or SUBMITTED FOR SETTLEMENT.', true));
 							return false;
 						}
-						$result = Braintree_Transaction::void($model->id);
+						$result = Braintree_Transaction::void($braintree_transaction_id);
 						if (!$result->success) {
 							$this->showError($result->message);
 							return false;
@@ -388,11 +392,13 @@ class BraintreeSource extends DataSource {
 						);
 						break;
 					case 'Transaction':
-						$transaction = Braintree_Transaction::find($conditions[$model->alias . '.' . $model->primaryKey]);
+						$exploded = explode('|', $conditions[$model->alias . '.' . $model->primaryKey]);
+						$braintree_transaction_id = isset($exploded[1]) ? $exploded[1] : $conditions[$model->alias . '.' . $model->primaryKey];
+						$transaction = Braintree_Transaction::find($braintree_transaction_id);
 						$result = array(
 							0 => array(
 								$model->alias => array(
-									'id' => $transaction->id,
+									'id' => $transaction->customer['id'] . '|' . $transaction->id,
 									'customer_id' => $transaction->customer['id'],
 									'payment_method_token' => $transaction->creditCard['token'],
 									'type' => $transaction->type,
