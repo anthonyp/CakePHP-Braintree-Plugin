@@ -228,6 +228,7 @@ class BraintreeSource extends DataSource {
 					break;
 			}
 		} catch (Exception $e) {
+			$this->showError(print_r($e, true));
 			return false;
 		}
 		
@@ -306,6 +307,7 @@ class BraintreeSource extends DataSource {
 					break;
 			}
 		} catch (Exception $e) {
+			$this->showError(print_r($e, true));
 			return false;
 		}
 		
@@ -495,6 +497,7 @@ class BraintreeSource extends DataSource {
 			try {
 				$all_customers = Braintree_Customer::all();
 			} catch (Exception $e) {
+				$this->showError(print_r($e, true));
 				return array();
 			}
 			$return = array();
@@ -552,6 +555,7 @@ class BraintreeSource extends DataSource {
 					break;
 			}
 		} catch (Exception $e) {
+			$this->showError(print_r($e, true));
 			return false;
 		}
 		

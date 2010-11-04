@@ -64,8 +64,16 @@
 	
 	if (empty($callback_url)) {
 		$callback_url = array(
-			'action' => $this->params['action']
+			'controller' => $this->params['controller'],
+			'action' => $this->params['action'],
+			'plugin' => $this->params['plugin']
 		);
+		if (!empty($this->params['pass'])) {
+			$callback_url = array_merge($callback_url, $this->params['pass']);
+		}
+		if (!empty($this->params['named'])) {
+			$callback_url = array_merge($callback_url, $this->params['named']);
+		}
 	}
 	if (!empty($foreign_model)) {
 		$callback_url['foreign_model'] = $foreign_model;
