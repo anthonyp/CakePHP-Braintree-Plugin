@@ -74,6 +74,68 @@ class BraintreeCallbackComponent extends Object {
 	public $_callback_actions = array();
 	
 /**
+ * List of processor response codes
+ *
+ * @var array
+ */
+	public $_processor_response_codes = array(
+		// Success
+		1000 => 'Approved',
+		1001 => 'Approved, check customer ID',
+		1002 => 'Processed - This code will be assigned to all credits and voice authorizations. These types of transactions do not need to be authorized they are immediately submitted for settlement.',
+		// Failure
+		2000 => 'Do Not Honor',
+		2001 => 'Insufficient Funds',
+		2002 => 'Limit Exceeded',
+		2003 => 'Cardholder\'s Activity Limit Exceeded',
+		2004 => 'Expired Card',
+		2005 => 'Invalid Credit Card Number',
+		2006 => 'Invalid Date',
+		2007 => 'No Account',
+		2008 => 'Card Account Length Error',
+		2009 => 'No Such Issuer',
+		2010 => 'Card Issuer Declined CVV',
+		2011 => 'Voice Authorization Required',
+		2012 => 'Voice Authorization Required. Possible Lost Card',
+		2013 => 'Voice Authorization Required. Possible stolen card',
+		2014 => 'Voice Authorization Required. Fraud Suspected.',
+		2015 => 'Transaction Not Allowed',
+		2016 => 'Duplicate Transaction',
+		2017 => 'Cardholder Stopped Billing',
+		2018 => 'Cardholder Stopped All Billing',
+		2019 => 'Declined by Issuer- Invalid Transaction',
+		2020 => 'Violation',
+		2021 => 'Security Violation',
+		2022 => 'Declined- Updated cardholder available',
+		2023 => 'Processor does not support this feature',
+		2024 => 'Card Type not enabled',
+		2025 => 'Set up error- Merchant',
+		2026 => 'Invalid Merchant ID',
+		2027 => 'Set up error - Amount',
+		2028 => 'Set Up Error - Hierarchy',
+		2029 => 'Set up error- Card',
+		2030 => 'Set up error- Terminal',
+		2031 => 'Encryption Error',
+		2032 => 'Surcharge Not Permitted',
+		2033 => 'Inconsistent Data',
+		2034 => 'No Action Taken',
+		2035 => 'Partial Approval for amount in Group III version',
+		2036 => 'Unsolicited Reversal',
+		2037 => 'Already Reversed',
+		2038 => 'Processor Declined',
+		2039 => 'Invalid Authorization Code',
+		2040 => 'Invalid Store',
+		2041 => 'Declined Call for Approval',
+		2043 => 'Error. Do not retry, call issuer',
+		2044 => 'Declined. Call issuer',
+		2045 => 'Invalid Merchant Number',
+		2046 => 'Declined',
+		2047 => 'Call Issuer. Pick Up Card',
+		// Failure
+		3000 => 'Processor network unavailable. Try Again'
+	);
+	
+/**
  * Parse out foreign model(s) and foreign id(s) from return request into an array like: array('ModelName' => '[the_foreign_id]')
  * 
  * @return	array
@@ -316,7 +378,49 @@ class BraintreeCallbackComponent extends Object {
  */
 	public function onFailure ($result) {
 		
-		$this->braintree_error = !empty($result) ? $result->message : __('No response. Please try again.', true);
+		$plain_english_error = '';
+		
+		if (!empty($result->verification['status'])) {
+			
+			if ($result->verification['status'] == 'gateway_rejected') {
+				
+				if (!empty($result->verification['gatewayRejectionReason'])) {
+					switch ($result->verification['gatewayRejectionReason']) {
+						case 'avs_and_cvv':
+							$plain_english_error = __('Both the billing address and CVV entered do not match those on file. Please enter the correct information before proceeding again.', true);
+							break;
+						case 'avs':
+							$plain_english_error = __('The billing address entered does not match the one on file. Please enter the correct address information before proceeding again.', true);
+							break;
+						case 'cvv':
+							$plain_english_error = __('The CVV entered does not match the one on file. Please enter the correct CVV before proceeding again.', true);
+							break;
+						default:
+							break;
+					}
+				}
+				
+			} elseif (
+				!empty($result->verification['processorResponseCode']) && 
+				$result->verification['processorResponseCode'] >= 2000 && 
+				!empty($this->_processor_response_codes[$result->verification['processorResponseCode']])
+			) {
+				
+				$plain_english_error = $this->_processor_response_codes[$result->verification['processorResponseCode']];
+				
+			}
+			
+		}
+		
+		if (empty($plain_english_error)) {
+			if (!empty($result)) {
+				$plain_english_error = $result->message;
+			} else {
+				$plain_english_error = __('No response. Please try again.', true);
+			}
+		}
+		
+		$this->braintree_error = $plain_english_error;
 		
 		$error = 'BRAINTREE ERROR: ';
 		$foreign_relationships = $this->parseForeignRelationshipsFromRequest();
@@ -331,11 +435,7 @@ class BraintreeCallbackComponent extends Object {
 			}
 			$error .= ': ';
 		}
-		if (!empty($result)) {
-			$error .= $result->message;
-		} else {
-			$error .= 'No response';
-		}
+		$error .= $plain_english_error;
 		
 		$this->logError($error);
 		
