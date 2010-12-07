@@ -465,12 +465,14 @@ class BraintreeCallbackComponent extends Object {
 			'countryCodeNumeric',
 			'countryName'
 		) as $key) {
-			if (!empty($result->creditCard->billingAddress->{$key})) {
-				$full_address_blank = false;
-				break;
-			}
+			try {
+				$value = $result->creditCard->billingAddress->{$key};
+				if (!empty($value)) {
+					$full_address_blank = false;
+					break;
+				}
+			} catch (Exception $e) { }
 		}
-		$braintree_address = array();
 		
 		$this->BraintreeCreditCard->begin();
 		$default_remote_sync = $this->BraintreeAddress->remote_sync;
