@@ -206,7 +206,8 @@ class BraintreeShell extends Shell {
 			
 			if (
 				!empty($remote_transaction['BraintreeRemoteTransaction']['status']) && 
-				$transaction['BraintreeTransaction']['status'] != $remote_transaction['BraintreeRemoteTransaction']['status']
+				$transaction['BraintreeTransaction']['status'] != $remote_transaction['BraintreeRemoteTransaction']['status'] && 
+				$remote_transaction['BraintreeRemoteTransaction']['status'] != 'settling'
 			) {
 				
 				$this->BraintreeTransaction->id = $transaction['BraintreeTransaction']['id'];
