@@ -19,6 +19,7 @@
  *															'postal_code'
  *															'country_code_alpha_2'
  *	- 'billing_postal_code_auth' Boolean	optional	If set to true, a postal code field will be displayed, and will be used in lieu of passed billing address information
+ *  - 'verify_credit_card' Boolean			optional	Specifies whether the credit card is verified at the time of vault entry (vs. at the time of transaction). If false, CVV will not be asked for, as it cannot be stored for future verification. Defaults to true.
  *  - 'form_options' Array					optional	Options to pass to Form::create()
  *  - 'callback_url' Mixed					optional	Array- or String- based URL to redirect Braintree callback to. Defaults to current action.
  *  - 'foreign_model' String				optional	The foreign model or comma-separated list of foreign models the vaulted credit card should be associated with
@@ -47,6 +48,7 @@
 ?>
 
 <?=$this->Html->css(!empty($stylesheet) ? $stylesheet : '/braintree/css/credit_card_form'); ?>
+<?=$this->Html->script('/braintree/js/strtotime'); ?>
 
 <?=$this->Form->create(
 	null,
@@ -54,7 +56,8 @@
 		array(
 			'type' => false,
 			'url' => $this->BraintreeTransparentRedirect->url(),
-			'id' => 'credit-card-form'
+			'id' => 'credit-card-form',
+			'onsubmit' => 'return braintree_check_cc_form();'
 		),
 		!empty($form_options) ? $form_options : array()
 	)
@@ -92,6 +95,7 @@
 				'customerId' => $braintree_customer_id,
 				'token' => String::uuid(),
 				'options' => array(
+					'verifyCard' => (!isset($verify_credit_card) || $verify_credit_card==true) ? true : false,
 					'makeDefault' => true
 				)
 			),
@@ -163,33 +167,37 @@
 			)
 		); ?>
 		
-		<?=$this->Form->input(
-			'cvv',
-			array_merge(
-				array(
-					'label' => __('CVV/CID', true) . ' <span id="credit-card-form-cvv-helper">[' . $this->Html->link(
-						__('What is this?', true),
-						array(
-							'plugin' => 'braintree',
-							'controller' => 'pages',
-							'action' => 'cvv_helper'
-						),
-						array(
-							'onclick' => "window.open('" . Router::url(array(
+		<?
+		if (isset($verify_credit_card) && $verify_credit_card==false) {
+			echo $this->Form->input(
+				'cvv',
+				array_merge(
+					array(
+						'label' => __('CVV/CID', true) . ' <span id="credit-card-form-cvv-helper">[' . $this->Html->link(
+							__('What is this?', true),
+							array(
 								'plugin' => 'braintree',
 								'controller' => 'pages',
 								'action' => 'cvv_helper'
-							)) . "', 'PopUp', 'width=400, height=500, resizable=yes, scrollbars=yes, menubar=no, toolbar=no, left=150, top=175, screenX=150, screenY=175'); return false;"
-						)
-					) . ']</span>',
-					'name' => 'credit_card[cvv]',
-					'id' => 'credit-card-form-cvv',
-					'class' => 'credit-card-form-small-field',
-					'maxLength' => 4
-				),
-				!empty($field_cvv_options) ? $field_cvv_options : array()
-			)
-		); ?>
+							),
+							array(
+								'onclick' => "window.open('" . Router::url(array(
+									'plugin' => 'braintree',
+									'controller' => 'pages',
+									'action' => 'cvv_helper'
+								)) . "', 'PopUp', 'width=400, height=500, resizable=yes, scrollbars=yes, menubar=no, toolbar=no, left=150, top=175, screenX=150, screenY=175'); return false;"
+							)
+						) . ']</span>',
+						'name' => 'credit_card[cvv]',
+						'id' => 'credit-card-form-cvv',
+						'class' => 'credit-card-form-small-field',
+						'maxLength' => 4
+					),
+					!empty($field_cvv_options) ? $field_cvv_options : array()
+				)
+			);
+		}
+		?>
 		
 		<div class="select">
 		
@@ -269,3 +277,24 @@
 	); ?>
 
 <?=$this->Form->end(); ?>
+
+<?=$this->Html->scriptBlock(
+	'
+	function braintree_check_cc_form () {
+	
+		cc_month = document.getElementById("' . $field_expiration_month_options['id'] . '").options[document.getElementById("' . $field_expiration_month_options['id'] . '").options.selectedIndex].value;
+		cc_year = document.getElementById("' . $field_expiration_year_options['id'] . '").options[document.getElementById("' . $field_expiration_year_options['id'] . '").options.selectedIndex].value;
+		
+		var current_timestamp = strtotime("' . date('n/1/Y') . '");
+		var cc_expiration_timestamp = strtotime(cc_month + "/1/" + cc_year);
+		
+		if (cc_expiration_timestamp < current_timestamp) {
+			alert("' . __('Expiration date must not be in the past.', true) . '");
+			return false;
+		} else {
+			return true;
+		}
+		
+	}
+	'
+); ?>

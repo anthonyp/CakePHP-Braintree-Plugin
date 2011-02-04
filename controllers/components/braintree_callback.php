@@ -380,7 +380,7 @@ class BraintreeCallbackComponent extends Object {
 		
 		$plain_english_error = '';
 		
-		if (!empty($result->verification['status'])) {
+		if (isset($result->verification) && !empty($result->verification['status'])) {
 			
 			if ($result->verification['status'] == 'gateway_rejected') {
 				
