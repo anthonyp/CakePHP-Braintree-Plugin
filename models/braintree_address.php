@@ -102,38 +102,23 @@ class BraintreeAddress extends BraintreeLocalAppModel {
 			)
 		),
 		'locality' => array (
-			'notEmpty' => array(
-				'rule' => 'notEmpty',
-				'last' => true,
-				'message' => 'Locality cannot be left blank.'
-			),
 			'maxLength' => array (
 				'rule' => array('maxLength', 255),
-				'last' => true,
+				'allowEmpty' => true,
 				'message' => 'Locality must be no longer than 255 characters.'
 			)
 		),
 		'region' => array (
-			'notEmpty' => array(
-				'rule' => 'notEmpty',
-				'last' => true,
-				'message' => 'Region cannot be left blank.'
-			),
 			'maxLength' => array (
 				'rule' => array('maxLength', 255),
-				'last' => true,
+				'allowEmpty' => true,
 				'message' => 'Region must be no longer than 255 characters.'
 			)
 		),
 		'postal_code' => array (
-			'notEmpty' => array(
-				'rule' => 'notEmpty',
-				'last' => true,
-				'message' => 'Postal code cannot be left blank.'
-			),
 			'maxLength' => array (
 				'rule' => array('maxLength', 255),
-				'last' => true,
+				'allowEmpty' => true,
 				'message' => 'Postal code must be no longer than 255 characters.'
 			)
 		),
