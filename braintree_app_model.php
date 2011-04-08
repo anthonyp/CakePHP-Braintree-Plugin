@@ -106,5 +106,23 @@ class BraintreeAppModel extends AppModel {
 		
 	}
 	
+/**
+ * Get options array for a field
+ *
+ * @param	string	$string
+ * @return	array
+ */
+	public function getOptions ($field) {
+		
+		$name = '_' . $field . '_options';
+		
+		if (isset($this->{$name})) {
+			return $this->{$name};
+		} else {
+			return array();
+		}
+		
+	}
+	
 }
 ?>

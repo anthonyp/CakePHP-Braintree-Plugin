@@ -41,6 +41,32 @@ class BraintreeTransaction extends BraintreeLocalAppModel {
 	public $autoPK = false;
 	
 /**
+ * Type options
+ *
+ * @var array
+ */
+	protected $_type_options = array(
+		'sale' => 'Sale',
+		'credit' => 'Credit',
+		'authorization' => 'Authorization'
+	);
+	
+/**
+ * Status options
+ *
+ * @var array
+ */
+	protected $_status_options = array(
+		'authorized' => 'Authorized',
+		'submitted_for_settlement' => 'Submitted for Settlement',
+		'settled' => 'Settled',
+		'voided' => 'Voided',
+		'processor_declined' => 'Processor Declined',
+		'gateway_rejected' => 'Gateway Rejected',
+		'failed' => 'Failed'
+	);
+	
+/**
  * Validation rules
  *
  * @var array
@@ -84,7 +110,7 @@ class BraintreeTransaction extends BraintreeLocalAppModel {
 		),
 		'type' => array(
 			'inList' => array(
-				'rule' => array('inList', array('sale', 'credit')),
+				'rule' => array('inList', array('sale', 'credit', 'authorization')),
 				'message' => 'Type must be valid.'
 			)
 		),
@@ -117,6 +143,10 @@ class BraintreeTransaction extends BraintreeLocalAppModel {
 		'BraintreeCreditCard' => array(
 			'className' => 'Braintree.BraintreeCreditCard',
 			'foreignKey' => 'braintree_credit_card_id'
+		),
+		'BraintreeCustomer' => array(
+			'className' => 'Braintree.BraintreeCustomer',
+			'foreignKey' => 'braintree_customer_id'
 		),
 		'BraintreeMerchant' => array(
 			'className' => 'Braintree.BraintreeMerchant',

@@ -137,6 +137,47 @@ class BraintreeSource extends DataSource {
 		return str_replace(array('BraintreeRemote'), '', $model->name);
 		
 	}
+	
+/**
+ * Check to ensure a transaction ID is valid and matches the type specified, if applicable
+ *
+ * @param	object	$model
+ * @param	int		$braintree_transaction_id
+ * @param	array	$options
+ * 					type				string	Options: sale, credit, authorization, or NULL (any)
+ * 					not_found_msg		string
+ * 					type_mismatch_msg	string
+ * @return	bool	
+ */
+	private function _checkTransaction (&$model, $braintree_transaction_id=0, $options=array()) {
+		
+		$options = array_merge(
+			array(
+				'type' => null,
+				'not_found_msg' => __('The transaction could not be found', true),
+				'type_mismatch_msg' => __('This action cannot be performed on this transaction type', true)
+			),
+			$options
+		);
+		extract($options);
+		
+		$transaction = $this->read($model, array(
+			'conditions' => array(
+				$model->alias . '.' . $model->primaryKey => $braintree_transaction_id
+			)
+		));
+		if (empty($transaction)) {
+			$this->showError($not_found_msg);
+			return false;
+		}
+		if (!is_null($type) && $transaction[0][$model->alias]['type'] !== $type) {
+			$this->showError($type_mismatch_msg);
+			return false;
+		}
+		
+		return true;
+		
+	}
 
 /**
  * Creates a new record via the API
@@ -181,23 +222,38 @@ class BraintreeSource extends DataSource {
 							$this->showError(__('A refundable transaction ID must be provided.', true));
 							return false;
 						}
-						$transaction = $this->read($model, array(
-							'conditions' => array(
-								$model->alias . '.' . $model->primaryKey => $to_save['braintreeTransactionId']
+						$transaction_valid = $this->_checkTransaction(
+							$model,
+							$to_save['braintreeTransactionId'],
+							array(
+								'type' => 'sale',
+								'not_found_msg' => __('The transaction attempting to be refunded could not be found.', true),
+								'type_mismatch_msg' => __('The transaction attempting to be refunded is a credit, not a sale.', true)
 							)
-						));
-						if (empty($transaction)) {
-							$this->showError(__('The transaction attempting to be refunded could not be found.', true));
-							return false;
-						}
-						if ($transaction[0][$model->alias]['type'] == 'credit') {
-							$this->showError(__('The transaction attempting to be refunded is a credit, not a sale.', true));
+						);
+						if (!$transaction_valid) {
 							return false;
 						}
 						$exploded = explode('|', $to_save['braintreeTransactionId']);
 						$braintree_transaction_id = isset($exploded[1]) ? $exploded[1] : $to_save['braintreeTransactionId'];
 						$result = Braintree_Transaction::refund($braintree_transaction_id, $to_save['amount']);
-					} else { // it's a sale
+					} elseif (
+						!empty($to_save['type']) && 
+						$to_save['type'] == 'authorization'
+					) { 
+						unset(
+							$to_save['type'],
+							$to_save['braintreeTransactionId']
+						);
+						$result = Braintree_Transaction::sale(array_merge(
+							array(
+								'options' => array(
+									'submitForSettlement' => false
+								)
+							),
+							$to_save
+						));
+					} else { // it's a a sale
 						unset(
 							$to_save['type'],
 							$to_save['braintreeTransactionId']
@@ -287,6 +343,20 @@ class BraintreeSource extends DataSource {
 							return false;
 						}
 						$result = Braintree_Transaction::void($braintree_transaction_id);
+						if (!$result->success) {
+							$this->showError($result->message);
+							return false;
+						}
+					} elseif (!empty($to_save['status']) && $to_save['status'] == 'submitted_for_settlement') {
+						if ($transaction[0][$model->alias]['status'] != 'authorized') {
+							$this->showError(__('A transaction can only be SUBMITTED FOR SETTLEMENT when the status is AUTHORIZED.', true));
+							return false;
+						}
+						if (!empty($to_save['amount'])) {
+							$result = Braintree_Transaction::submitForSettlement($braintree_transaction_id, $to_save['amount']);
+						} else {
+							$result = Braintree_Transaction::submitForSettlement($braintree_transaction_id);
+						}
 						if (!$result->success) {
 							$this->showError($result->message);
 							return false;
