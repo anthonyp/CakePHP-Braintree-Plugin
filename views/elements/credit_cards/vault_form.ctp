@@ -168,7 +168,7 @@
 		); ?>
 		
 		<?
-		if (isset($verify_credit_card) && $verify_credit_card==false) {
+		if (isset($verify_credit_card) && $verify_credit_card==true) {
 			echo $this->Form->input(
 				'cvv',
 				array_merge(
