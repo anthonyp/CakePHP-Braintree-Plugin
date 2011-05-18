@@ -380,12 +380,16 @@ class BraintreeCallbackComponent extends Object {
 		
 		$plain_english_error = '';
 		
-		if (isset($result->verification) && !empty($result->verification['status'])) {
+		/*
+		 * The result checking cannot needs to be done this way vs using isset() or empty() on the 
+		 * attributes directly because the Braintree vendor has a custom __get() method
+		 */
+		if (!empty($result) && ($verification = $result->verification) && !empty($verification['status'])) {
 			
-			if ($result->verification['status'] == 'gateway_rejected') {
+			if ($verification['status'] == 'gateway_rejected') {
 				
-				if (!empty($result->verification['gatewayRejectionReason'])) {
-					switch ($result->verification['gatewayRejectionReason']) {
+				if (!empty($verification['gatewayRejectionReason'])) {
+					switch ($verification['gatewayRejectionReason']) {
 						case 'avs_and_cvv':
 							$plain_english_error = __('Both the billing address and CVV entered do not match those on file. Please enter the correct information before proceeding again.', true);
 							break;
@@ -401,12 +405,12 @@ class BraintreeCallbackComponent extends Object {
 				}
 				
 			} elseif (
-				!empty($result->verification['processorResponseCode']) && 
-				$result->verification['processorResponseCode'] >= 2000 && 
-				!empty($this->_processor_response_codes[$result->verification['processorResponseCode']])
+				!empty($verification['processorResponseCode']) && 
+				$verification['processorResponseCode'] >= 2000 && 
+				!empty($this->_processor_response_codes[$verification['processorResponseCode']])
 			) {
 				
-				$plain_english_error = $this->_processor_response_codes[$result->verification['processorResponseCode']];
+				$plain_english_error = $this->_processor_response_codes[$verification['processorResponseCode']];
 				
 			}
 			
