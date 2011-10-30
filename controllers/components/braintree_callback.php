@@ -463,11 +463,7 @@ class BraintreeCallbackComponent extends Object {
 			'company',
 			'streetAddress',
 			'extendedAddress',
-			'locality',
-			'countryCodeAlpha2',
-			'countryCodeAlpha3',
-			'countryCodeNumeric',
-			'countryName'
+			'locality'
 		) as $key) {
 			try {
 				$value = $result->creditCard->billingAddress->{$key};
@@ -502,7 +498,8 @@ class BraintreeCallbackComponent extends Object {
 					'country_code_numeric' => $result->creditCard->billingAddress->countryCodeNumeric,
 					'country_name' => $result->creditCard->billingAddress->countryName
 				) : array(
-					'postal_code' => $result->creditCard->billingAddress->postalCode
+					'postal_code' => $result->creditCard->billingAddress->postalCode,
+					'country_code_alpha_2' => $result->creditCard->billingAddress->countryCodeAlpha2
 				)
 			)
 		));

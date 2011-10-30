@@ -255,10 +255,22 @@
 						'name' => 'credit_card[billing_address][postal_code]',
 						'id' => 'credit-card-form-postal-code',
 						'class' => 'credit-card-form-small-field',
-						'maxLength' => 9,
-						'onkeyup' => "braintree_check_cc_number(this)"
+						'maxLength' => 9
 					),
 					!empty($field_postal_code_options) ? $field_postal_code_options : array()
+				)
+			);
+			echo $this->Form->input(
+				'country_code_alpha2',
+				array_merge(
+					array(
+						'label' => __('Billing Country', true),
+						'name' => 'credit_card[billing_address][country_code_alpha2]',
+						'id' => 'credit-card-form-country-code-alpha2',
+						'options' => ClassRegistry::init('Braintree.BraintreeCountry')->accepted_countries,
+						'selected' => 'US'
+					),
+					!empty($field_country_code_alpha2_options) ? $field_country_code_alpha2_options : array()
 				)
 			);
 		}
