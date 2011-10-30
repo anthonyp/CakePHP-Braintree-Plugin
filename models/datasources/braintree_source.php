@@ -178,6 +178,44 @@ class BraintreeSource extends DataSource {
 		return true;
 		
 	}
+	
+/**
+ * Get list of IDs that should be deleted based on conditions
+ *
+ * @param	object	$model
+ * @param	array	$conditions
+ * @return	mixed	Array if IDs can be found, false if there is an error
+ */
+	protected function _getIdsToBeDeleted (&$model, $conditions=array()) {
+		
+		if (empty($conditions) && !empty($model->id)) {
+			$conditions = array($model->alias . '.' . $model->primaryKey => $model->id);
+		}
+		
+		if (empty($conditions)) {
+			$this->showError(__($model->alias . '.' . $model->primaryKey . ' must be set in order to delete', true));
+			return false;
+		}
+		
+		if (
+			count($conditions) == 1 && 
+			key($conditions) == $model->alias . '.' . $model->primaryKey
+		) {
+			$ids = array_shift($conditions);
+		} else {
+			$ids = array_values($model->find('list', array(
+				'fields' => array($model->primaryKey),
+				'conditions' => $conditions
+			)));
+		}
+		
+		if (!is_array($ids)) {
+			$ids = array($ids);
+		}
+		
+		return $ids;
+		
+	}
 
 /**
  * Creates a new record via the API
@@ -590,43 +628,45 @@ class BraintreeSource extends DataSource {
  */
 	public function delete (&$model, $id = null) {
 		
-		if (empty($id)) {
-			$id = $model->id;
-		}
+		$ids = $this->_getIdsToBeDeleted($model, $conditions);
 		
-		if (empty($id)) {
-			$this->showError(__($model->alias . '.' . $model->primaryKey . ' must be set in order to delete', true));
+		if ($ids === false) {
+			return false;
 		}
 		
 		$entity = $this->_getModelEntity($model);
 		
-		try {
-			switch ($entity) {
-				case 'Customer':
-					Braintree_Customer::delete($id);
-					break;
-				case 'Transaction':
-					$this->showError(__('Transactions cannot be deleted', true));
-					return false;
-					break;
-				case 'CreditCard':
-					Braintree_CreditCard::delete($id);
-					break;
-				case 'Address':
-					$exploded = explode('|', $id);
-					if (count($exploded) != 2) {
-						return false;
+		if (!empty($ids)) {
+			foreach ($ids as $id) {
+				try {
+					switch ($entity) {
+						case 'Customer':
+							Braintree_Customer::delete($id);
+							break;
+						case 'Transaction':
+							$this->showError(__('Transactions cannot be deleted', true));
+							return false;
+							break;
+						case 'CreditCard':
+							Braintree_CreditCard::delete($id);
+							break;
+						case 'Address':
+							$exploded = explode('|', $id);
+							if (count($exploded) != 2) {
+								return false;
+							}
+							list($customer_id, $address_id) = $exploded;
+							Braintree_Address::delete($customer_id, $address_id);
+							break;
+						default:
+							return false;
+							break;
 					}
-					list($customer_id, $address_id) = $exploded;
-					Braintree_Address::delete($customer_id, $address_id);
-					break;
-				default:
-					$result = false;
-					break;
+				} catch (Exception $e) {
+					$this->showError(print_r($e, true));
+					return false;
+				}
 			}
-		} catch (Exception $e) {
-			$this->showError(print_r($e, true));
-			return false;
 		}
 		
 		return true;
