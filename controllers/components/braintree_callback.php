@@ -384,7 +384,7 @@ class BraintreeCallbackComponent extends Object {
 		 * The result checking cannot needs to be done this way vs using isset() or empty() on the 
 		 * attributes directly because the Braintree vendor has a custom __get() method
 		 */
-		if (!empty($result) && ($verification = $result->verification) && !empty($verification['status'])) {
+		if (!empty($result) && ($verification = @$result->verification) && !empty($verification['status'])) {
 			
 			if ($verification['status'] == 'gateway_rejected') {
 				
