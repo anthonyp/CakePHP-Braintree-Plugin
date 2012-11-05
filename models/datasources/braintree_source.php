@@ -623,10 +623,10 @@ class BraintreeSource extends DataSource {
  * Deletes a record via the API
  *
  * @param	object	$model
- * @param	string	$id
+ * @param	mixed	$conditions
  * @return	bool
  */
-	public function delete (&$model, $id = null) {
+	public function delete (&$model, $conditions = null) {
 		
 		$ids = $this->_getIdsToBeDeleted($model, $conditions);
 		
