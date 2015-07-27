@@ -322,7 +322,7 @@ class BraintreeSource extends DataSource {
 					break;
 			}
 		} catch (Exception $e) {
-			$this->showError(print_r($e, true));
+			$this->showError($e);
 			return false;
 		}
 
@@ -695,17 +695,25 @@ class BraintreeSource extends DataSource {
 			trigger_error($error, E_USER_WARNING);
 		} else {
 
-			$class = get_class($error);
-			$message = $error->getMessage();
-			$code = $error->getCode();
-			$file = $error->getFile();
-			$linenumber = $error->getLine();
+			if (is_string($error)) {
 
-			$public = Braintree_Configuration::publicKey();
-			$merchant_id = Braintree_Configuration::merchantId();
-			$environment = Braintree_Configuration::environment();
+				$this->log("Braintree Error: {$error}");
 
-			$this->log("Braintree Error: {$message}, {$code} in object {$class}, line number {$linenumber} in file {$file}.  Configuration: public {$public}, merchant {$merchant_id}, env {$environment}.");
+			} else {
+
+				$class = get_class($error);
+				$message = $error->getMessage();
+				$code = $error->getCode();
+				$file = $error->getFile();
+				$linenumber = $error->getLine();
+
+				$public = Braintree_Configuration::publicKey();
+				$merchant_id = Braintree_Configuration::merchantId();
+				$environment = Braintree_Configuration::environment();
+
+				$this->log("Braintree Error: {$message}, {$code} in object {$class}, line number {$linenumber} in file {$file}.  Configuration: public {$public}, merchant {$merchant_id}, env {$environment}.");
+
+			}
 
 		}
 
